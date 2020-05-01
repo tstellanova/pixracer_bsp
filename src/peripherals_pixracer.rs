@@ -12,11 +12,12 @@ use p_hal::gpio::GpioExt;
 use p_hal::rcc::RccExt;
 use p_hal::time::{Hertz, U32Ext};
 
-
+/// Initialize peripherals for Pixracer.
+/// Pixracer chip is [STM32F427VIT6 rev.3](http://www.st.com/web/en/catalog/mmc/FM141/SC1169/SS1577/LN1789)
 pub fn setup_peripherals() -> (
     impl OutputPin + ToggleableOutputPin,
     impl DelayMs<u8>,
-    ImuI2cPortType,
+    I2C1PortType,
     Spi1PortType,
     ChipSelectPinType
 ) {
@@ -107,12 +108,19 @@ pub fn setup_peripherals() -> (
         // let reset_pin = gpiob.pb10.into_open_drain_output();
         // //.into_push_pull_output(&mut gpiob.moder, &mut gpiob.otyper);
 
+    //TODO setup ports & pins for these devices:
 
+    //Invensense® ICM-20608 Accel / Gyro (4 KHz)
+    // MPU9250 Accel / Gyro / Mag (4 KHz)
+    // HMC5983 magnetometer with temperature compensation
+    // MS5611 barometer Measurement Specialties MS5611 barometer
+    // SPI microsd
+    // RC port (s.bus ?) for FrSky
 
     (user_led1, delay_source, i2c_port, spi1_port, csn)
 }
 
-pub type ImuI2cPortType = p_hal::i2c::I2c<
+pub type I2C1PortType = p_hal::i2c::I2c<
     I2C1,
     (
         p_hal::gpio::gpiob::PB8<p_hal::gpio::AlternateOD<p_hal::gpio::AF4>>,

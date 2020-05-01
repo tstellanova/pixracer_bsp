@@ -1,8 +1,8 @@
 
 #![no_std]
 
-mod peripherals_pixracer;
-use peripherals_pixracer as peripherals;
+pub mod peripherals_pixracer;
+pub use peripherals_pixracer as peripherals;
 
 
 #[cfg(test)]
