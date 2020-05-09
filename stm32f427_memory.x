@@ -4,8 +4,8 @@ MEMORY
   /* NOTE K = 1024 bytes */
   /* FLASH and RAM are mandatory memory regions */
 
-  FLASH  : ORIGIN = 0x08000000, LENGTH = 2048K
-  RAM    : ORIGIN = 0x20000000, LENGTH = 256K
+  FLASH  : ORIGIN = 0x08000000, LENGTH = 256K
+  RAM    : ORIGIN = 0x20000000, LENGTH = 64K
 
 }
 

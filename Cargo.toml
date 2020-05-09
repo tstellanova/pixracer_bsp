@@ -21,8 +21,15 @@ ist8310 = {git = "https://github.com/tstellanova/ist8310" }
 # for Invensense  ICM-20608 6DOF accel/gyro
 icm20689 = {git = "https://github.com/tstellanova/icm20689"}
 # MPU9250 IMU
-mpu9250 = "0.20.0"
+#mpu9250 = "0.20.0"
+#mpu9250 =  {path="../mpu9250-rs"}
+mpu9250 = {git="https://github.com/tstellanova/mpu9250"}
 
+
+[dev-dependencies]
+cortex-m-rt = "0.6.12"
+panic-rtt-core = "0.1.0"
+shared-bus = {version="0.1.4", features=["cortexm"] }
 
 
 [features]
