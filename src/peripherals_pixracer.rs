@@ -3,7 +3,6 @@ use stm32f4xx_hal as p_hal;
 use p_hal::stm32 as pac;
 use p_hal::stm32::I2C1;
 
-
 // use p_hal::flash::FlashExt;
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::digital::v2::{OutputPin, ToggleableOutputPin};
@@ -11,19 +10,23 @@ use p_hal::gpio::GpioExt;
 use p_hal::rcc::RccExt;
 use p_hal::time::{Hertz, U32Ext};
 
-
 /// Initialize peripherals for Pixracer.
 /// Pixracer chip is [STM32F427VIT6 rev.3](http://www.st.com/web/en/catalog/mmc/FM141/SC1169/SS1577/LN1789)
 pub fn setup_peripherals() -> (
-    (impl OutputPin + ToggleableOutputPin, impl OutputPin + ToggleableOutputPin, impl OutputPin + ToggleableOutputPin),
+    (
+        impl OutputPin + ToggleableOutputPin,
+        impl OutputPin + ToggleableOutputPin,
+        impl OutputPin + ToggleableOutputPin,
+    ),
     impl DelayMs<u8>,
     I2C1PortType,
     Spi1PortType,
     Spi2PortType,
-    SpiPinsImu, // imu
+    SpiPinsImu,  // imu
     SpiPins6Dof, // 6dof
-    SpiPinsMag, // mag
-    SpiCsBaro, //baro
+    SpiPinsMag,  // mag
+    SpiCsBaro,   //baro
+    Spi1PowerEnable,
 ) {
     let dp = pac::Peripherals::take().unwrap();
     let cp = cortex_m::Peripherals::take().unwrap();
@@ -51,22 +54,14 @@ pub fn setup_peripherals() -> (
     let gpiod = dp.GPIOD.split();
     let gpioe = dp.GPIOE.split();
 
-    let user_led1 = gpiob.pb11.into_push_pull_output();//red
+    let user_led1 = gpiob.pb11.into_push_pull_output(); //red
     let user_led2 = gpiob.pb1.into_push_pull_output(); //green
     let user_led3 = gpiob.pb3.into_push_pull_output(); //blue
 
     let i2c1_port = {
-        let scl = gpiob
-            .pb8
-            .into_alternate_af4()
-            .set_open_drain();
-
-        let sda = gpiob
-            .pb9
-            .into_alternate_af4()
-            .set_open_drain();
-
-        p_hal::i2c::I2c::i2c1(dp.I2C1, (scl, sda), 1000.khz(), clocks)
+        let scl = gpiob.pb8.into_alternate_af4().set_open_drain();
+        let sda = gpiob.pb9.into_alternate_af4().set_open_drain();
+        p_hal::i2c::I2c::i2c1(dp.I2C1, (scl, sda), 400.khz(), clocks)
     };
 
     let spi1_port = {
@@ -77,8 +72,8 @@ pub fn setup_peripherals() -> (
         p_hal::spi::Spi::spi1(
             dp.SPI1,
             (sck, miso, mosi),
-            embedded_hal::spi::MODE_0,
-            3_000_000.hz(),
+            embedded_hal::spi::MODE_3,
+            10_000_000.hz(),
             clocks,
         )
     };
@@ -91,14 +86,11 @@ pub fn setup_peripherals() -> (
         p_hal::spi::Spi::spi2(
             dp.SPI2,
             (sck, miso, mosi),
-            embedded_hal::spi::MODE_0,
-            3_000_000.hz(),
+            embedded_hal::spi::MODE_3,
+            20_000_000.hz(),
             clocks,
         )
     };
-
-
-    //		initSPIDevice(DRV_IMU_DEVTYPE_MPU9250, SPI::CS{GPIO::PortC, GPIO::Pin2}, SPI::DRDY{GPIO::PortD, GPIO::Pin15}),
 
     // SPI chip select and data ready pins
     // MPU9250
@@ -113,6 +105,8 @@ pub fn setup_peripherals() -> (
 
     let spi_cs_baro = gpiod.pd7.into_push_pull_output();
 
+    //enables power to spi1 bus devices
+    let spi1_power_enable = gpioe.pe3.into_push_pull_output();
 
     //TODO setup ports & pins for these devices:
 
@@ -125,7 +119,7 @@ pub fn setup_peripherals() -> (
     // Pixracer R15 has LIS3MDL for mag
 
     (
-        ( user_led1, user_led2, user_led3),
+        (user_led1, user_led2, user_led3),
         delay_source,
         i2c1_port,
         spi1_port,
@@ -134,6 +128,7 @@ pub fn setup_peripherals() -> (
         (spi_cs_6dof, spi_drdy_6dof),
         (spi_cs_mag, spi_drdy_mag),
         spi_cs_baro,
+        spi1_power_enable,
     )
 }
 
@@ -163,13 +158,21 @@ pub type Spi2PortType = p_hal::spi::Spi<
     ),
 >;
 
+pub type SpiPinsImu = (
+    p_hal::gpio::gpioc::PC2<p_hal::gpio::Output<p_hal::gpio::PushPull>>,
+    p_hal::gpio::gpiod::PD15<p_hal::gpio::Input<p_hal::gpio::PullUp>>,
+);
+pub type SpiPins6Dof = (
+    p_hal::gpio::gpioc::PC15<p_hal::gpio::Output<p_hal::gpio::PushPull>>,
+    p_hal::gpio::gpioc::PC14<p_hal::gpio::Input<p_hal::gpio::PullUp>>,
+);
+pub type SpiPinsMag = (
+    p_hal::gpio::gpioe::PE15<p_hal::gpio::Output<p_hal::gpio::PushPull>>,
+    p_hal::gpio::gpioe::PE12<p_hal::gpio::Input<p_hal::gpio::PullUp>>,
+);
 
-pub type SpiPinsImu = (p_hal::gpio::gpioc::PC2<p_hal::gpio::Output<p_hal::gpio::PushPull>>,
-                   p_hal::gpio::gpiod::PD15<p_hal::gpio::Input<p_hal::gpio::PullUp>>);
-pub type SpiPins6Dof = (p_hal::gpio::gpioc::PC15<p_hal::gpio::Output<p_hal::gpio::PushPull>>,
-                    p_hal::gpio::gpioc::PC14<p_hal::gpio::Input<p_hal::gpio::PullUp>>);
-pub type SpiPinsMag = (p_hal::gpio::gpioe::PE15<p_hal::gpio::Output<p_hal::gpio::PushPull>>,
-                   p_hal::gpio::gpioe::PE12<p_hal::gpio::Input<p_hal::gpio::PullUp>>);
+pub type SpiCsBaro =
+    p_hal::gpio::gpiod::PD7<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
 
-pub type SpiCsBaro = p_hal::gpio::gpiod::PD7<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
-
+pub type Spi1PowerEnable =
+    p_hal::gpio::gpioe::PE3<p_hal::gpio::Output<p_hal::gpio::PushPull>>;

@@ -16,8 +16,10 @@ stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal", features = 
 
 # for ms5611 barometer
 ms5611-spi = { git= "https://github.com/tstellanova/ms5611-ehal" }
-# for HMC5883 mag
-ist8310 = {git = "https://github.com/tstellanova/ist8310" }
+# for HMC5893 mag
+#hmc5983 = {path="../hmc5983", features=["rttdebug"]}
+hmc5983 = {git = "https://github.com/tstellanova/hmc5983", features=["rttdebug"] }
+
 # for Invensense  ICM-20608 6DOF accel/gyro
 icm20689 = {git = "https://github.com/tstellanova/icm20689"}
 # MPU9250 IMU
