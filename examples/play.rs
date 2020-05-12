@@ -53,20 +53,24 @@ fn main() -> ! {
 
     let mut tdk_6dof =
         icm20689::Builder::new_spi(spi_bus1.acquire(), spi_cs_6dof);
-    //tdk_6dof.setup(&mut delay_source).expect("tdk 6dof failed");
+    let rc1 = tdk_6dof.setup(&mut delay_source);
+    if rc1.is_err() {
+        rprintln!("6dof setup failed: {:?}", rc1);
+    }
+
 
     let mut mpu =
         Mpu9250::imu_default(spi_bus1.acquire(), spi_cs_imu, &mut delay_source)
             .expect("mpu init failed");
 
+    let mut msbaro =
+        Ms5611::new(spi_bus2.acquire(), spi_cs_baro, &mut delay_source)
+            .expect("ms5611 init failed");
+
     let mut mag1 = HMC5983::new_with_interface(
         hmc5983::interface::SpiInterface::new(spi_bus1.acquire(), spi_cs_mag),
     );
     mag1.init(&mut delay_source).expect("mag init failed");
-
-    let mut msbaro =
-        Ms5611::new(spi_bus2.acquire(), spi_cs_baro, &mut delay_source)
-            .expect("ms5611 init failed");
 
     let loop_interval = IMU_REPORTING_INTERVAL_MS as u8;
     rprintln!("loop_interval: {}", loop_interval);
