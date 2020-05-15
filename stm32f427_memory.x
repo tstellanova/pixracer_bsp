@@ -4,10 +4,13 @@ MEMORY
   /* NOTE K = 1024 bytes */
   /* FLASH and RAM are mandatory memory regions */
 
-  FLASH  : ORIGIN = 0x08000000, LENGTH = 256K
-  RAM    : ORIGIN = 0x20000000, LENGTH = 64K
+  /* NOTE flash actually starts at 0x08000000 but we leave space for the PX4 bootloader */
+  FLASH  : ORIGIN = 0x08004000, LENGTH = 2032K
+  CCSRAM : ORIGIN = 0x10000000, LENGTH = 64K
+  RAM   : ORIGIN = 0x20000000, LENGTH = 192K
 
 }
+
 
 /*
 This is where the call stack will be allocated.
