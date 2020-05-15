@@ -9,6 +9,7 @@ use panic_rtt_core::{self, rprintln, rtt_init_print};
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::digital::v2::ToggleableOutputPin;
+use embedded_hal::PwmPin;
 
 const IMU_REPORTING_RATE_HZ: u16 = 200;
 const IMU_REPORTING_INTERVAL_MS: u16 = (1000 / IMU_REPORTING_RATE_HZ);
@@ -19,9 +20,11 @@ use ms5611::{Ms5611, Oversampling};
 use ms5611_spi as ms5611;
 
 // use crate::peripherals as peripherals;
-use cortex_m::asm::bkpt;
 use hmc5983::HMC5983;
 use pixracer_bsp::peripherals;
+use core::cmp::max;
+use rand_core::RngCore;
+
 
 #[entry]
 fn main() -> ! {
@@ -31,46 +34,73 @@ fn main() -> ! {
     let (
         mut user_leds,
         mut delay_source,
+        mut rng,
         i2c1_port,
         spi1_port,
         spi2_port,
-        (spi_cs_imu, spi_drdy_imu),
-        (spi_cs_6dof, spi_drdy_6dof),
-        (spi_cs_mag, spi_drdy_mag),
+        (spi_cs_imu, _spi_drdy_imu),
+        (spi_cs_6dof, _spi_drdy_6dof),
+        (spi_cs_mag, _spi_drdy_mag),
         spi_cs_baro,
         mut spi1_power_enable,
+        mut tim1_pwm_chans
     ) = peripherals::setup_peripherals();
 
     let spi_bus1 = shared_bus::CortexMBusManager::new(spi1_port);
     let spi_bus2 = shared_bus::CortexMBusManager::new(spi2_port);
-    let i2c_bus1 = shared_bus::CortexMBusManager::new(i2c1_port);
+    let _i2c_bus1 = shared_bus::CortexMBusManager::new(i2c1_port);
 
+    // power cycle spi devices
     let _ = spi1_power_enable.set_low();
-    delay_source.delay_ms(50u8);
+    delay_source.delay_ms(250u8);
     let _ = spi1_power_enable.set_high();
     // wait a bit for sensors to power up
     delay_source.delay_ms(250u8);
 
-    let mut tdk_6dof =
-        icm20689::Builder::new_spi(spi_bus1.acquire(), spi_cs_6dof);
-    let rc1 = tdk_6dof.setup(&mut delay_source);
-    if rc1.is_err() {
-        rprintln!("6dof setup failed: {:?}", rc1);
-    }
+    // setup pwm
+    let max_duty = (tim1_pwm_chans.0.get_max_duty()) as u32;
+    tim1_pwm_chans.0.set_duty(0);
+    tim1_pwm_chans.0.enable();
 
+    let mut mag_int_opt = {
+        let mut mag_int = HMC5983::new_with_interface(
+            hmc5983::interface::SpiInterface::new(spi_bus1.acquire(), spi_cs_mag),
+        );
+        let rc = mag_int.init(&mut delay_source);
+        if mag_int.init(&mut delay_source).is_ok() {
+            Some(mag_int)
+        }
+        else {
+            rprintln!("mag setup fail: {:?}" , rc);
+            None
+        }
+    };
 
-    let mut mpu =
-        Mpu9250::imu_default(spi_bus1.acquire(), spi_cs_imu, &mut delay_source)
+    let mut tdk_opt = {
+        let mut tdk_6dof =
+            icm20689::Builder::new_spi(spi_bus1.acquire(), spi_cs_6dof);
+        let rc = tdk_6dof.setup(&mut delay_source);
+        if rc.is_ok() { Some(tdk_6dof) }
+        else {
+            rprintln!("6dof setup failed: {:?}", rc);
+            None
+        }
+    };
+
+    let mut mpu_opt = {
+        let mpu = Mpu9250::imu_default(spi_bus1.acquire(), spi_cs_imu, &mut delay_source)
             .expect("mpu init failed");
+        Some(mpu)
+    };
 
-    let mut msbaro =
-        Ms5611::new(spi_bus2.acquire(), spi_cs_baro, &mut delay_source)
-            .expect("ms5611 init failed");
-
-    let mut mag1 = HMC5983::new_with_interface(
-        hmc5983::interface::SpiInterface::new(spi_bus1.acquire(), spi_cs_mag),
-    );
-    mag1.init(&mut delay_source).expect("mag init failed");
+    let mut baro_int_opt = {
+        let rc = Ms5611::new(spi_bus2.acquire(), spi_cs_baro, &mut delay_source);
+        if let Ok(baro) = rc { Some(baro)}
+        else {
+            rprintln!("baro setup failed");
+            None
+        }
+    };
 
     let loop_interval = IMU_REPORTING_INTERVAL_MS as u8;
     rprintln!("loop_interval: {}", loop_interval);
@@ -79,31 +109,47 @@ fn main() -> ! {
     let _ = user_leds.1.set_low();
     let _ = user_leds.2.set_high();
 
+
     loop {
-        if let Ok(mag_sample) = mag1.get_mag_vector() {
-            rprintln!("mag0 {}", mag_sample[0]);
+        let rand_duty = (rng.next_u32() % max_duty) as u16;
+        tim1_pwm_chans.0.set_duty(rand_duty);
+        rprintln!("duty: {}", rand_duty);
+
+        for _ in 0..10 {
+            for _ in 0..10 {
+                if mpu_opt.is_some() {
+                    if let Ok(marg_all) = mpu_opt.as_mut().unwrap().all::<[f32; 3]>() {
+                        //rprintln!("imu az: {:.02}", marg_all.accel[2]);
+                    }
+                }
+
+                if tdk_opt.is_some() {
+                    // if let Ok(gyro_sample) = tdk_6dof.get_gyro() {
+                    //     //rprintln!("gyro: {:?}", gyro_sample);
+                    // }
+                    if let Ok(sample) = tdk_opt.as_mut().unwrap().get_scaled_accel() {
+                        //rprintln!("tdk az: {}", sample[2]);
+                    }
+                }
+
+                delay_source.delay_ms(loop_interval);
+            }
+
+            if mag_int_opt.is_some() {
+                if let Ok(mag_sample) = mag_int_opt.as_mut().unwrap().get_mag_vector() {
+                    //rprintln!("mag_i_0 {}", mag_sample[0]);
+                }
+            }
         }
 
-        if let Ok(baro_sample) = msbaro
-            .get_second_order_sample(Oversampling::OS_2048, &mut delay_source)
-        {
-            rprintln!("baro: {} ", baro_sample.pressure);
-            //TODO do something with baro sample
+        if baro_int_opt.is_some() {
+            if let Ok(sample) = baro_int_opt.as_mut().unwrap().get_second_order_sample(Oversampling::OS_2048, &mut delay_source) {
+                //rprintln!("baro: {} ", sample.pressure);
+            }
         }
-
-        if let Ok(marg_all) = mpu.all::<[f32; 3]>() {
-            rprintln!("imu az: {:.02}", marg_all.accel[2]);
-        }
-        // if let Ok(gyro_sample) = tdk_6dof.get_gyro() {
-        //     //rprintln!("gyro: {:?}", gyro_sample);
-        // }
-        // if let Ok(accel_sample) = tdk_6dof.get_accel() {
-        //     //rprintln!("accel: {:?}", accel_sample);
-        // }
 
         let _ = user_leds.0.toggle();
         let _ = user_leds.1.toggle();
         //let _ = user_leds.2.toggle();
-        delay_source.delay_ms(loop_interval);
     }
 }

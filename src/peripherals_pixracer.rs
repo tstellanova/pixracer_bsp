@@ -10,6 +10,11 @@ use p_hal::gpio::GpioExt;
 use p_hal::rcc::RccExt;
 use p_hal::time::{Hertz, U32Ext};
 
+#[cfg(feature = "rttdebug")]
+use panic_rtt_core::rprintln;
+use stm32f4xx_hal::pwm;
+use stm32f4xx_hal::rng::{RngExt, Rng};
+
 /// Initialize peripherals for Pixracer.
 /// Pixracer chip is [STM32F427VIT6 rev.3](http://www.st.com/web/en/catalog/mmc/FM141/SC1169/SS1577/LN1789)
 pub fn setup_peripherals() -> (
@@ -19,6 +24,7 @@ pub fn setup_peripherals() -> (
         impl OutputPin + ToggleableOutputPin,
     ),
     impl DelayMs<u8>,
+    Rng,
     I2C1PortType,
     Spi1PortType,
     Spi2PortType,
@@ -27,6 +33,7 @@ pub fn setup_peripherals() -> (
     SpiPinsMag,  // mag
     SpiCsBaro,   //baro
     Spi1PowerEnable,
+    Tim1PwmChannels,
 ) {
     let dp = pac::Peripherals::take().unwrap();
     let cp = cortex_m::Peripherals::take().unwrap();
@@ -42,6 +49,8 @@ pub fn setup_peripherals() -> (
         .freeze();
 
     let delay_source = p_hal::delay::Delay::new(cp.SYST, clocks);
+
+    let mut rand_source = dp.RNG.constrain(clocks);
 
     // let hclk = clocks.hclk();
     // let pll48clk = clocks.pll48clk().unwrap_or(0u32.hz());
@@ -73,7 +82,7 @@ pub fn setup_peripherals() -> (
             dp.SPI1,
             (sck, miso, mosi),
             embedded_hal::spi::MODE_3,
-            10_000_000.hz(),
+            8_000_000.hz(),
             clocks,
         )
     };
@@ -94,33 +103,65 @@ pub fn setup_peripherals() -> (
 
     // SPI chip select and data ready pins
     // MPU9250
-    let spi_cs_imu = gpioc.pc2.into_push_pull_output(); //into_open_drain_output();
+    let mut spi_cs_imu = gpioc.pc2.into_push_pull_output();
+    let _ = spi_cs_imu.set_high();
     let spi_drdy_imu = gpiod.pd15.into_pull_up_input();
     // ICM20602 or ICM20608G
-    let spi_cs_6dof = gpioc.pc15.into_push_pull_output();
+    let mut spi_cs_6dof = gpioc.pc15.into_push_pull_output();
+    let _ = spi_cs_6dof.set_high();
     let spi_drdy_6dof = gpioc.pc14.into_pull_up_input();
     // HMC5883 (hmc5983) or LIS3MDL
-    let spi_cs_mag = gpioe.pe15.into_push_pull_output();
+    let mut spi_cs_mag = gpioe.pe15.into_push_pull_output();
+    let _ = spi_cs_mag.set_high();
     let spi_drdy_mag = gpioe.pe12.into_pull_up_input();
 
-    let spi_cs_baro = gpiod.pd7.into_push_pull_output();
+    let mut spi_cs_baro = gpiod.pd7.into_push_pull_output();
+    let _ = spi_cs_baro.set_high();
 
     //enables power to spi1 bus devices
     let spi1_power_enable = gpioe.pe3.into_push_pull_output();
 
     //TODO setup ports & pins for these devices:
 
+    // --- SPI1 ---
     // Invensense® ICM-20608 Accel / Gyro (4 KHz)
     // MPU9250 Accel / Gyro / Mag (4 KHz)
     // HMC5983 magnetometer with temperature compensation
+    // --- SPI2 ---
     // MS5611 barometer Measurement Specialties MS5611 barometer on internal SPI (spi2??)
     // SPI microsd
+    // --- ??? ---
     // RC port (s.bus ?) for FrSky
     // Pixracer R15 has LIS3MDL for mag
+
+    // PWM output pins
+    // pixracer actually provides six pwm pins, but for now we only setup four
+    // because stm32f4xx_hal lacks type erasure for the GPIO port letter,
+    // which means we can't create a heterogeneous array of gpioe and gpiod pins.
+    // let mut pwm_pins = [
+    //     gpioe.pe14.into_push_pull_output().downgrade(),
+    //     gpioe.pe13.into_push_pull_output().downgrade(),
+    //     gpioe.pe11.into_push_pull_output().downgrade(),
+    //     gpioe.pe9.into_push_pull_output().downgrade(),
+    //     // gpiod.pd13.into_push_pull_output().downgrade(), // TIM4_CH2
+    //     // gpiod.pd14.into_push_pull_output().downgrade() // TIM4_CH3
+    // ];
+
+    // Note that this channel order is different from the external pin order
+    let pwm_pins = (
+        gpioe.pe9.into_alternate_af1(), // TIM1_CH1 -> pin4 ?
+        gpioe.pe11.into_alternate_af1(), // TIM1_CH2 -> pin3 ?
+        gpioe.pe13.into_alternate_af1(), // TIM1_CH3 -> pin2 ?
+        gpioe.pe14.into_alternate_af1(), // TIM1_CH4 -> pin1 ?
+    );
+
+    //TODO we use 400 Hz by default for PWM output...may be able to drive faster with some ESCs
+    let pwm_tim1_channels = pwm::tim1(dp.TIM1, pwm_pins, clocks, 400.hz());
 
     (
         (user_led1, user_led2, user_led3),
         delay_source,
+        rand_source,
         i2c1_port,
         spi1_port,
         spi2_port,
@@ -129,6 +170,7 @@ pub fn setup_peripherals() -> (
         (spi_cs_mag, spi_drdy_mag),
         spi_cs_baro,
         spi1_power_enable,
+        pwm_tim1_channels
     )
 }
 
@@ -176,3 +218,11 @@ pub type SpiCsBaro =
 
 pub type Spi1PowerEnable =
     p_hal::gpio::gpioe::PE3<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
+
+
+pub type Tim1PwmChannels = (
+    stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C1>,
+     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C2>,
+     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C3>,
+     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C4>
+);
