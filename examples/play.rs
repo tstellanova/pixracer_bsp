@@ -58,7 +58,7 @@ fn main() -> ! {
     delay_source.delay_ms(250u8);
 
     // setup pwm
-    let max_duty = (tim1_pwm_chans.0.get_max_duty()) as u32;
+    let max_duty = tim1_pwm_chans.0.get_max_duty();
     tim1_pwm_chans.0.set_duty(0);
     tim1_pwm_chans.0.enable();
 
@@ -109,11 +109,17 @@ fn main() -> ! {
     let _ = user_leds.1.set_low();
     let _ = user_leds.2.set_high();
 
-
+    let min_duty = 21000;
+    let duty_increment = 1000;
+    let mut pwm0_duty = min_duty;
     loop {
-        let rand_duty = (rng.next_u32() % max_duty) as u16;
-        tim1_pwm_chans.0.set_duty(rand_duty);
-        rprintln!("duty: {}", rand_duty);
+        // minimum duty = 20,000 ?
+        tim1_pwm_chans.0.set_duty(pwm0_duty);
+        pwm0_duty += duty_increment;
+        if pwm0_duty > max_duty {
+            pwm0_duty = min_duty;
+        }
+        rprintln!("duty: {}", pwm0_duty);
 
         for _ in 0..10 {
             for _ in 0..10 {
