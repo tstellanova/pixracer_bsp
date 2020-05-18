@@ -32,6 +32,9 @@ icm20689 = "0.1.1"
 #mpu9250 = {git="https://github.com/tstellanova/mpu9250"}
 mpu9250 = "0.20.0"
 
+# FRAM
+spi-memory = { git = "https://github.com/tstellanova/spi-memory" }
+
 [dev-dependencies]
 cortex-m-rt = "0.6.12"
 panic-rtt-core = "0.1.0"

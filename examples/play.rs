@@ -42,6 +42,7 @@ fn main() -> ! {
         (spi_cs_6dof, _spi_drdy_6dof),
         (spi_cs_mag, _spi_drdy_mag),
         spi_cs_baro,
+        spi_cs_fram,
         mut spi1_power_enable,
         mut tim1_pwm_chans
     ) = peripherals::setup_peripherals();
@@ -102,6 +103,22 @@ fn main() -> ! {
         }
     };
 
+    let mut fram_opt = {
+        let mut rc = spi_memory::series25::Flash::init(spi_bus2.acquire(), spi_cs_fram);
+        if let Ok(fram) = rc { Some(fram)}
+        else {
+            rprintln!("fram setup failed");
+            None
+        }
+    };
+
+    if fram_opt.is_some() {
+        if let Ok(ident) = fram_opt.as_mut().unwrap().read_jedec_id() {
+            rprintln!("FRAM ident: {:?}", ident);
+            //FRAM ident: Identification([c2, 22, 00])
+        }
+    }
+
     let loop_interval = IMU_REPORTING_INTERVAL_MS as u8;
     rprintln!("loop_interval: {}", loop_interval);
 
@@ -143,14 +160,14 @@ fn main() -> ! {
 
             if mag_int_opt.is_some() {
                 if let Ok(mag_sample) = mag_int_opt.as_mut().unwrap().get_mag_vector() {
-                    //rprintln!("mag_i_0 {}", mag_sample[0]);
+                    rprintln!("mag_i_0 {}", mag_sample[0]);
                 }
             }
         }
 
         if baro_int_opt.is_some() {
             if let Ok(sample) = baro_int_opt.as_mut().unwrap().get_second_order_sample(Oversampling::OS_2048, &mut delay_source) {
-                //rprintln!("baro: {} ", sample.pressure);
+                rprintln!("baro: {} ", sample.pressure);
             }
         }
 

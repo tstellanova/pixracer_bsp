@@ -31,7 +31,8 @@ pub fn setup_peripherals() -> (
     SpiPinsImu,  // imu
     SpiPins6Dof, // 6dof
     SpiPinsMag,  // mag
-    SpiCsBaro,   //baro
+    SpiCsBaro,   // baro
+    SpiCsFram, // flash ram
     Spi1PowerEnable,
     Tim1PwmChannels,
 ) {
@@ -118,6 +119,9 @@ pub fn setup_peripherals() -> (
     let mut spi_cs_baro = gpiod.pd7.into_push_pull_output();
     let _ = spi_cs_baro.set_high();
 
+    let mut spi_cs_fram = gpiod.pd10.into_push_pull_output();
+    let _ = spi_cs_fram.set_high();
+
     //enables power to spi1 bus devices
     let spi1_power_enable = gpioe.pe3.into_push_pull_output();
 
@@ -130,6 +134,7 @@ pub fn setup_peripherals() -> (
     // --- SPI2 ---
     // MS5611 barometer Measurement Specialties MS5611 barometer on internal SPI (spi2??)
     // SPI microsd
+    // FRAM? spi2, cs
     // --- ??? ---
     // RC port (s.bus ?) for FrSky
     // Pixracer R15 has LIS3MDL for mag
@@ -138,14 +143,10 @@ pub fn setup_peripherals() -> (
     // pixracer actually provides six pwm pins, but for now we only setup four
     // because stm32f4xx_hal lacks type erasure for the GPIO port letter,
     // which means we can't create a heterogeneous array of gpioe and gpiod pins.
-    // let mut pwm_pins = [
-    //     gpioe.pe14.into_push_pull_output().downgrade(),
-    //     gpioe.pe13.into_push_pull_output().downgrade(),
-    //     gpioe.pe11.into_push_pull_output().downgrade(),
-    //     gpioe.pe9.into_push_pull_output().downgrade(),
-    //     // gpiod.pd13.into_push_pull_output().downgrade(), // TIM4_CH2
-    //     // gpiod.pd14.into_push_pull_output().downgrade() // TIM4_CH3
-    // ];
+
+    // TODO support final two PWM pins (on gpiod):
+    // gpiod.pd13.into_push_pull_output().downgrade(), // TIM4_CH2
+    // gpiod.pd14.into_push_pull_output().downgrade() // TIM4_CH3
 
     // Note that this channel order is different from the external pin order
     let pwm_pins = (
@@ -169,6 +170,7 @@ pub fn setup_peripherals() -> (
         (spi_cs_6dof, spi_drdy_6dof),
         (spi_cs_mag, spi_drdy_mag),
         spi_cs_baro,
+        spi_cs_fram,
         spi1_power_enable,
         pwm_tim1_channels
     )
@@ -215,6 +217,8 @@ pub type SpiPinsMag = (
 
 pub type SpiCsBaro =
     p_hal::gpio::gpiod::PD7<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
+pub type SpiCsFram =
+    p_hal::gpio::gpiod::PD10<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
 
 pub type Spi1PowerEnable =
     p_hal::gpio::gpioe::PE3<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
