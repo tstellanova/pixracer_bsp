@@ -4,7 +4,7 @@
 use cortex_m_rt as rt;
 use rt::entry;
 
-use panic_rtt_core::{self, rprintln, rtt_init_print};
+use panic_rtt_core::{self, rprintln, rprint, rtt_init_print};
 
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::digital::v2::OutputPin;
@@ -24,6 +24,8 @@ use hmc5983::HMC5983;
 use pixracer_bsp::peripherals;
 use core::cmp::max;
 use rand_core::RngCore;
+use spi_memory::{Read, FastBlockRead};
+use cortex_m::asm::bkpt;
 
 
 #[entry]
@@ -104,7 +106,8 @@ fn main() -> ! {
     };
 
     let mut fram_opt = {
-        let mut rc = spi_memory::series25::Flash::init(spi_bus2.acquire(), spi_cs_fram);
+        let rc = spi_memory::series25::Flash::init_full(
+            spi_bus2.acquire(), spi_cs_fram, 2);
         if let Ok(fram) = rc { Some(fram)}
         else {
             rprintln!("fram setup failed");
@@ -113,11 +116,72 @@ fn main() -> ! {
     };
 
     if fram_opt.is_some() {
-        if let Ok(ident) = fram_opt.as_mut().unwrap().read_jedec_id() {
+        let flosh = fram_opt.as_mut().unwrap();
+        if let Ok(ident) = flosh.read_jedec_id() {
             rprintln!("FRAM ident: {:?}", ident);
-            //FRAM ident: Identification([c2, 22, 00])
+            // Identification([c2, 22, 00])
+            // maybe FM25V02-G per ramtron:
+            // F-RAM 256 kilobit (32K x 8 bit = 32 kilobytes)
+
+            const SIZE_IN_BYTES: usize = 0xA80; //32 * 1024;
+            let mut addr: usize = 0;
+            const BUFSIZE: usize = 32;
+            let mut buf = [0; BUFSIZE];
+
+            rprintln!("dump FRAM!!!");
+            /* Notes:
+            // PARAM_FILE /fs/mtd_params
+            // MTD_PARTITION_TABLE  {"/fs/mtd_params", "/fs/mtd_waypoints"}
+            nsh> mtd status
+            INFO  [mtd] Flash Geometry:
+              blocksize:      512
+              erasesize:      512
+              neraseblocks:   64
+              No. partitions: 2
+              Partition size: 32 Blocks (16384 bytes)
+              TOTAL SIZE: 32 KiB
+
+            nsh> param status
+            INFO  [parameters] summary: 559/1344 (used/total)
+            INFO  [parameters] file: /fs/mtd_params
+            INFO  [parameters] storage array: 106/128 elements (2048 bytes total)
+            INFO  [parameters] auto save: on
+            */
+            let mut last_byte_char = false;
+            while addr < SIZE_IN_BYTES {
+                let mapped_addr: u32 = addr as u32;
+                let rc = flosh.fast_block_read(mapped_addr, &mut buf);
+                if rc.is_ok() {
+                    for i in 0..BUFSIZE {
+                        let char_addr = addr + i;
+                        let c = buf[i];
+                        if c > 47 {
+                            if !last_byte_char {
+                                rprint!("\n0x{:X} : ",char_addr);
+                            }
+                            rprint!("{}",c as char);
+                            last_byte_char = true;
+                        }
+                        else {
+                            rprint!(" 0x{:x}, ",c);
+                            last_byte_char = false;
+                        }
+                    }
+                    //rprintln!("0x{:X} {:x?}", addr, &buf);
+                }
+                else {
+                    rprintln!("read err: {:?}", rc);
+                }
+                // only 15 bits of address is used by this device
+                addr = addr + BUFSIZE;
+                delay_source.delay_ms(100u8);
+            }
+
+            rprintln!("max address: 0x{:X}", addr);
         }
     }
+
+    // bkpt();
 
     let loop_interval = IMU_REPORTING_INTERVAL_MS as u8;
     rprintln!("loop_interval: {}", loop_interval);
@@ -136,7 +200,7 @@ fn main() -> ! {
         if pwm0_duty > max_duty {
             pwm0_duty = min_duty;
         }
-        rprintln!("duty: {}", pwm0_duty);
+        // rprintln!("duty: {}", pwm0_duty);
 
         for _ in 0..10 {
             for _ in 0..10 {
@@ -160,14 +224,14 @@ fn main() -> ! {
 
             if mag_int_opt.is_some() {
                 if let Ok(mag_sample) = mag_int_opt.as_mut().unwrap().get_mag_vector() {
-                    rprintln!("mag_i_0 {}", mag_sample[0]);
+                    // rprintln!("mag_i_0 {}", mag_sample[0]);
                 }
             }
         }
 
         if baro_int_opt.is_some() {
             if let Ok(sample) = baro_int_opt.as_mut().unwrap().get_second_order_sample(Oversampling::OS_2048, &mut delay_source) {
-                rprintln!("baro: {} ", sample.pressure);
+                // rprintln!("baro: {} ", sample.pressure);
             }
         }
 

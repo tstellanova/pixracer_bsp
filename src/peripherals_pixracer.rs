@@ -32,7 +32,7 @@ pub fn setup_peripherals() -> (
     SpiPins6Dof, // 6dof
     SpiPinsMag,  // mag
     SpiCsBaro,   // baro
-    SpiCsFram, // flash ram
+    SpiCsFram, // ferro ram
     Spi1PowerEnable,
     Tim1PwmChannels,
 ) {
