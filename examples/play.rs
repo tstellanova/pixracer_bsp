@@ -25,7 +25,7 @@ use pixracer_bsp::peripherals;
 use core::cmp::max;
 use rand_core::RngCore;
 use spi_memory::{Read, FastBlockRead};
-use cortex_m::asm::bkpt;
+use pixracer_bsp::peripherals_pixracer::{Spi2PortType, SpiCsFram};
 
 
 #[entry]
@@ -122,62 +122,7 @@ fn main() -> ! {
             // Identification([c2, 22, 00])
             // maybe FM25V02-G per ramtron:
             // F-RAM 256 kilobit (32K x 8 bit = 32 kilobytes)
-
-            const SIZE_IN_BYTES: usize = 0xA80; //32 * 1024;
-            let mut addr: usize = 0;
-            const BUFSIZE: usize = 32;
-            let mut buf = [0; BUFSIZE];
-
-            rprintln!("dump FRAM!!!");
-            /* Notes:
-            // PARAM_FILE /fs/mtd_params
-            // MTD_PARTITION_TABLE  {"/fs/mtd_params", "/fs/mtd_waypoints"}
-            nsh> mtd status
-            INFO  [mtd] Flash Geometry:
-              blocksize:      512
-              erasesize:      512
-              neraseblocks:   64
-              No. partitions: 2
-              Partition size: 32 Blocks (16384 bytes)
-              TOTAL SIZE: 32 KiB
-
-            nsh> param status
-            INFO  [parameters] summary: 559/1344 (used/total)
-            INFO  [parameters] file: /fs/mtd_params
-            INFO  [parameters] storage array: 106/128 elements (2048 bytes total)
-            INFO  [parameters] auto save: on
-            */
-            let mut last_byte_char = false;
-            while addr < SIZE_IN_BYTES {
-                let mapped_addr: u32 = addr as u32;
-                let rc = flosh.fast_block_read(mapped_addr, &mut buf);
-                if rc.is_ok() {
-                    for i in 0..BUFSIZE {
-                        let char_addr = addr + i;
-                        let c = buf[i];
-                        if c > 47 {
-                            if !last_byte_char {
-                                rprint!("\n0x{:X} : ",char_addr);
-                            }
-                            rprint!("{}",c as char);
-                            last_byte_char = true;
-                        }
-                        else {
-                            rprint!(" 0x{:x}, ",c);
-                            last_byte_char = false;
-                        }
-                    }
-                    //rprintln!("0x{:X} {:x?}", addr, &buf);
-                }
-                else {
-                    rprintln!("read err: {:?}", rc);
-                }
-                // only 15 bits of address is used by this device
-                addr = addr + BUFSIZE;
-                delay_source.delay_ms(100u8);
-            }
-
-            rprintln!("max address: 0x{:X}", addr);
+            // dump_fram(flosh, &mut delay_source);
         }
     }
 
@@ -240,3 +185,51 @@ fn main() -> ! {
         //let _ = user_leds.2.toggle();
     }
 }
+
+// fn dump_fram(flosh: &mut FramType,
+//              delay_source:  &mut impl DelayMs<u8>,) {
+//     const SIZE_IN_BYTES: usize = 0xA80; //32 * 1024 max
+//     let mut addr: usize = 0;
+//     const BUFSIZE: usize = 32;
+//     let mut buf = [0; BUFSIZE];
+//
+//     rprintln!("dump FRAM!!!");
+//     /* Notes:
+//     // PARAM_FILE /fs/mtd_params
+//     // MTD_PARTITION_TABLE  {"/fs/mtd_params", "/fs/mtd_waypoints"}
+//     nsh> mtd status
+//     INFO  [mtd] Flash Geometry:
+//       blocksize:      512
+//       erasesize:      512
+//       neraseblocks:   64
+//       No. partitions: 2
+//       Partition size: 32 Blocks (16384 bytes)
+//       TOTAL SIZE: 32 KiB
+//
+//     nsh> param status
+//     INFO  [parameters] summary: 559/1344 (used/total)
+//     INFO  [parameters] file: /fs/mtd_params
+//     INFO  [parameters] storage array: 106/128 elements (2048 bytes total)
+//     INFO  [parameters] auto save: on
+//     */
+//
+//     let mut last_byte_char = false;
+//     while addr < SIZE_IN_BYTES {
+//         let mapped_addr: u32 = addr as u32;
+//         let rc = flosh.fast_block_read(mapped_addr, &mut buf);
+//         if rc.is_ok() {
+//             for i in 0..BUFSIZE {
+//                 rprint!("{:02x}",buf[i]);
+//             }
+//             //rprintln!("0x{:X} {:x?}", addr, &buf);
+//         }
+//         else {
+//             rprintln!("read err: {:?}", rc);
+//         }
+//         // only 15 bits of address is used by this device
+//         addr = addr + BUFSIZE;
+//         delay_source.delay_ms(100u8);
+//     }
+//
+//     rprintln!("max address: 0x{:X}", addr);
+// }
