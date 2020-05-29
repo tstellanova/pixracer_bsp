@@ -1,10 +1,15 @@
+/*
+Copyright (c) 2020 Todd Stellanova
+LICENSE: BSD3 (see LICENSE file)
+*/
+
 #![no_main]
 #![no_std]
 
 use cortex_m_rt as rt;
 use rt::entry;
 
-use panic_rtt_core::{self, rprintln, rtt_init_print};
+use panic_rtt_core::{self, rprintln, rprint, rtt_init_print};
 
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::digital::v2::OutputPin;
@@ -24,6 +29,8 @@ use hmc5983::HMC5983;
 use pixracer_bsp::peripherals;
 use core::cmp::max;
 use rand_core::RngCore;
+use spi_memory::{Read, FastBlockRead};
+use pixracer_bsp::peripherals_pixracer::{Spi2PortType, SpiCsFram};
 
 
 #[entry]
@@ -104,7 +111,8 @@ fn main() -> ! {
     };
 
     let mut fram_opt = {
-        let mut rc = spi_memory::series25::Flash::init(spi_bus2.acquire(), spi_cs_fram);
+        let rc = spi_memory::series25::Flash::init_full(
+            spi_bus2.acquire(), spi_cs_fram, 2);
         if let Ok(fram) = rc { Some(fram)}
         else {
             rprintln!("fram setup failed");
@@ -113,11 +121,17 @@ fn main() -> ! {
     };
 
     if fram_opt.is_some() {
-        if let Ok(ident) = fram_opt.as_mut().unwrap().read_jedec_id() {
+        let flosh = fram_opt.as_mut().unwrap();
+        if let Ok(ident) = flosh.read_jedec_id() {
             rprintln!("FRAM ident: {:?}", ident);
-            //FRAM ident: Identification([c2, 22, 00])
+            // Identification([c2, 22, 00])
+            // maybe FM25V02-G per ramtron:
+            // F-RAM 256 kilobit (32K x 8 bit = 32 kilobytes)
+            // dump_fram(flosh, &mut delay_source);
         }
     }
+
+    // bkpt();
 
     let loop_interval = IMU_REPORTING_INTERVAL_MS as u8;
     rprintln!("loop_interval: {}", loop_interval);
@@ -136,7 +150,7 @@ fn main() -> ! {
         if pwm0_duty > max_duty {
             pwm0_duty = min_duty;
         }
-        rprintln!("duty: {}", pwm0_duty);
+        // rprintln!("duty: {}", pwm0_duty);
 
         for _ in 0..10 {
             for _ in 0..10 {
@@ -160,14 +174,14 @@ fn main() -> ! {
 
             if mag_int_opt.is_some() {
                 if let Ok(mag_sample) = mag_int_opt.as_mut().unwrap().get_mag_vector() {
-                    rprintln!("mag_i_0 {}", mag_sample[0]);
+                    // rprintln!("mag_i_0 {}", mag_sample[0]);
                 }
             }
         }
 
         if baro_int_opt.is_some() {
             if let Ok(sample) = baro_int_opt.as_mut().unwrap().get_second_order_sample(Oversampling::OS_2048, &mut delay_source) {
-                rprintln!("baro: {} ", sample.pressure);
+                // rprintln!("baro: {} ", sample.pressure);
             }
         }
 
@@ -176,3 +190,4 @@ fn main() -> ! {
         //let _ = user_leds.2.toggle();
     }
 }
+
