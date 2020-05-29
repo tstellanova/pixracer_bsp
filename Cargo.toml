@@ -40,7 +40,7 @@ spi-memory  =  {path= "../spi-memory" }
 
 [dev-dependencies]
 cortex-m-rt = "0.6.12"
-#panic-rtt-core = {version="0.1.0"}
+#panic-rtt-core = {version="0.1.1"}
 shared-bus = {version="0.1.4", features=["cortexm"] }
 rand_core = "0.5.1"
 

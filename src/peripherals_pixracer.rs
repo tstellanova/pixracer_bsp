@@ -1,3 +1,8 @@
+/*
+Copyright (c) 2020 Todd Stellanova
+LICENSE: BSD3 (see LICENSE file)
+*/
+
 use stm32f4xx_hal as p_hal;
 
 use p_hal::stm32 as pac;
