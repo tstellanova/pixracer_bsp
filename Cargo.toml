@@ -35,8 +35,8 @@ icm20689 = "0.1.1"
 mpu9250 = "0.20.0"
 
 # FRAM
-#spi-memory = { git = "https://github.com/tstellanova/spi-memory" }
-spi-memory  =  {path= "../spi-memory" }
+spi-memory = { git = "https://github.com/tstellanova/spi-memory" }
+#spi-memory  =  {path= "../spi-memory" }
 
 [dev-dependencies]
 cortex-m-rt = "0.6.12"
