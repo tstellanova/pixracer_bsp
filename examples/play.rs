@@ -17,7 +17,7 @@ use embedded_hal::digital::v2::ToggleableOutputPin;
 use embedded_hal::PwmPin;
 
 const IMU_REPORTING_RATE_HZ: u16 = 200;
-const IMU_REPORTING_INTERVAL_MS: u16 = (1000 / IMU_REPORTING_RATE_HZ);
+const IMU_REPORTING_INTERVAL_MS: u16 = 1000 / IMU_REPORTING_RATE_HZ;
 
 use mpu9250::Mpu9250;
 /// Sensors
@@ -27,10 +27,7 @@ use ms5611_spi as ms5611;
 // use crate::peripherals as peripherals;
 use hmc5983::HMC5983;
 use pixracer_bsp::peripherals;
-use core::cmp::max;
-use rand_core::RngCore;
-use spi_memory::{Read, FastBlockRead};
-use pixracer_bsp::peripherals_pixracer::{Spi2PortType, SpiCsFram};
+// use rand_core::RngCore;
 
 
 #[entry]
@@ -130,8 +127,6 @@ fn main() -> ! {
             // dump_fram(flosh, &mut delay_source);
         }
     }
-
-    // bkpt();
 
     let loop_interval = IMU_REPORTING_INTERVAL_MS as u8;
     rprintln!("loop_interval: {}", loop_interval);

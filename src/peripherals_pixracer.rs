@@ -6,19 +6,19 @@ LICENSE: BSD3 (see LICENSE file)
 use stm32f4xx_hal as p_hal;
 
 use p_hal::stm32 as pac;
-use p_hal::stm32::I2C1;
+use pac::I2C1;
 
 // use p_hal::flash::FlashExt;
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::digital::v2::{OutputPin, ToggleableOutputPin};
 use p_hal::gpio::GpioExt;
 use p_hal::rcc::RccExt;
-use p_hal::time::{Hertz, U32Ext};
+use p_hal::time::{U32Ext};
 
-#[cfg(feature = "rttdebug")]
-use panic_rtt_core::rprintln;
-use stm32f4xx_hal::pwm;
-use stm32f4xx_hal::rng::{RngExt, Rng};
+
+use p_hal::pwm;
+use p_hal::rng::{RngExt, Rng};
+
 
 /// Initialize peripherals for Pixracer.
 /// Pixracer chip is [STM32F427VIT6 rev.3](http://www.st.com/web/en/catalog/mmc/FM141/SC1169/SS1577/LN1789)
@@ -56,7 +56,7 @@ pub fn setup_peripherals() -> (
 
     let delay_source = p_hal::delay::Delay::new(cp.SYST, clocks);
 
-    let mut rand_source = dp.RNG.constrain(clocks);
+    let rand_source = dp.RNG.constrain(clocks);
 
     // let hclk = clocks.hclk();
     // let pll48clk = clocks.pll48clk().unwrap_or(0u32.hz());
@@ -230,8 +230,8 @@ pub type Spi1PowerEnable =
 
 
 pub type Tim1PwmChannels = (
-    stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C1>,
-     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C2>,
-     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C3>,
-     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C4>
+    p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C1>,
+    p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C2>,
+    p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C3>,
+    p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C4>
 );

@@ -8,8 +8,6 @@ description = "A board support package for the Pixracer flight controller hardwa
 [dependencies]
 cortex-m = "0.6.2"
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
-panic-rtt-core = {version="0.1.1", optional=true}
-#panic-rtt-core = { path="../panic-rtt-core", optional=true }
 
 
 stm32f4 = {version = "0.11", features = ["stm32f427"]  }
@@ -40,11 +38,10 @@ spi-memory = { git = "https://github.com/tstellanova/spi-memory" }
 
 [dev-dependencies]
 cortex-m-rt = "0.6.12"
-#panic-rtt-core = {version="0.1.1"}
+panic-rtt-core = {version="0.1.1"}
 shared-bus = {version="0.1.4", features=["cortexm"] }
 rand_core = "0.5.1"
 
 [features]
 default = []
-rttdebug = ["panic-rtt-core"]
 
