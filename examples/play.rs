@@ -24,7 +24,7 @@ use hmc5983::HMC5983;
 use pixracer_bsp::peripherals;
 use core::cmp::max;
 use rand_core::RngCore;
-use spi_memory::{Read, FastBlockRead};
+use spi_memory::{Read}; //, FastBlockRead};
 use pixracer_bsp::peripherals_pixracer::{Spi2PortType, SpiCsFram};
 
 
@@ -46,7 +46,8 @@ fn main() -> ! {
         spi_cs_baro,
         spi_cs_fram,
         mut spi1_power_enable,
-        mut tim1_pwm_chans
+        mut tim1_pwm_chans,
+        mut ppm_in,
     ) = peripherals::setup_peripherals();
 
     let spi_bus1 = shared_bus::CortexMBusManager::new(spi1_port);
@@ -105,28 +106,28 @@ fn main() -> ! {
         }
     };
 
-    let mut fram_opt = {
-        let rc = spi_memory::series25::Flash::init_full(
-            spi_bus2.acquire(), spi_cs_fram, 2);
-        if let Ok(fram) = rc { Some(fram)}
-        else {
-            rprintln!("fram setup failed");
-            None
-        }
-    };
+    // let mut fram_opt = {
+    //     let rc = spi_memory::series25::Flash::init_full(
+    //         spi_bus2.acquire(), spi_cs_fram, 2);
+    //     if let Ok(fram) = rc { Some(fram)}
+    //     else {
+    //         rprintln!("fram setup failed");
+    //         None
+    //     }
+    // };
+    //
+    // if fram_opt.is_some() {
+    //     let flosh = fram_opt.as_mut().unwrap();
+    //     if let Ok(ident) = flosh.read_jedec_id() {
+    //         rprintln!("FRAM ident: {:?}", ident);
+    //         // Identification([c2, 22, 00])
+    //         // maybe FM25V02-G per ramtron:
+    //         // F-RAM 256 kilobit (32K x 8 bit = 32 kilobytes)
+    //         // dump_fram(flosh, &mut delay_source);
+    //     }
+    // }
 
-    if fram_opt.is_some() {
-        let flosh = fram_opt.as_mut().unwrap();
-        if let Ok(ident) = flosh.read_jedec_id() {
-            rprintln!("FRAM ident: {:?}", ident);
-            // Identification([c2, 22, 00])
-            // maybe FM25V02-G per ramtron:
-            // F-RAM 256 kilobit (32K x 8 bit = 32 kilobytes)
-            // dump_fram(flosh, &mut delay_source);
-        }
-    }
 
-    // bkpt();
 
     let loop_interval = IMU_REPORTING_INTERVAL_MS as u8;
     rprintln!("loop_interval: {}", loop_interval);

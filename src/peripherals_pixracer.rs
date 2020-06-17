@@ -35,6 +35,7 @@ pub fn setup_peripherals() -> (
     SpiCsFram, // ferro ram
     Spi1PowerEnable,
     Tim1PwmChannels,
+    PpmInputPin,
 ) {
     let dp = pac::Peripherals::take().unwrap();
     let cp = cortex_m::Peripherals::take().unwrap();
@@ -51,7 +52,7 @@ pub fn setup_peripherals() -> (
 
     let delay_source = p_hal::delay::Delay::new(cp.SYST, clocks);
 
-    let mut rand_source = dp.RNG.constrain(clocks);
+    let rand_source = dp.RNG.constrain(clocks);
 
     // let hclk = clocks.hclk();
     // let pll48clk = clocks.pll48clk().unwrap_or(0u32.hz());
@@ -159,6 +160,22 @@ pub fn setup_peripherals() -> (
     //TODO we use 400 Hz by default for PWM output...may be able to drive faster with some ESCs
     let pwm_tim1_channels = pwm::tim1(dp.TIM1, pwm_pins, clocks, 400.hz());
 
+    // PPM input:
+    // use TIM3 for HRT_TIMER
+    // use cap/comp channel 3 on TIM3 for PPM
+    // PPM in pin is gpiob.pb0  af2
+    let ppm_in = gpiob.pb0.into_alternate_af2().into_pull_up_input();
+
+    let nvic = dp.NVIC;
+    nvic.enable(stm32f30x::Interrupt::EXTI0);
+
+    //#define HRT_TIMER                    3  /* use timer 3 for the HRT */
+    // #define HRT_TIMER_CHANNEL            4  /* use capture/compare channel 4 */
+    //
+    // #define HRT_PPM_CHANNEL              3  /* use capture/compare channel 3 */
+    // #define GPIO_PPM_IN                  (GPIO_ALT|GPIO_AF2|GPIO_PULLUP|GPIO_PORTB|GPIO_PIN0)
+
+
     (
         (user_led1, user_led2, user_led3),
         delay_source,
@@ -172,7 +189,8 @@ pub fn setup_peripherals() -> (
         spi_cs_baro,
         spi_cs_fram,
         spi1_power_enable,
-        pwm_tim1_channels
+        pwm_tim1_channels,
+        ppm_in
     )
 }
 
@@ -223,10 +241,11 @@ pub type SpiCsFram =
 pub type Spi1PowerEnable =
     p_hal::gpio::gpioe::PE3<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
 
-
 pub type Tim1PwmChannels = (
-    stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C1>,
-     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C2>,
-     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C3>,
-     stm32f4xx_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C4>
+    p_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C1>,
+    p_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C2>,
+    p_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C3>,
+    p_hal::pwm::PwmChannels<stm32f4::stm32f427::TIM1, stm32f4xx_hal::pwm::C4>
 );
+
+pub type PpmInputPin = p_hal::gpio::gpiob::PB0<p_hal::gpio::Input<stm32f4xx_hal::gpio::PullUp>>;
