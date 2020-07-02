@@ -17,7 +17,7 @@ stm32f4xx-hal = { version ="0.8.3", features = ["stm32f427", "rt"] }
 #stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal", features = ["stm32f427", "rt"] }
 
 # for ms5611 barometer
-ms5611-spi = { git= "https://github.com/tstellanova/ms5611-ehal" }
+ms5611-spi = { git= "https://github.com/tstellanova/ms5611-ehal", version="0.1.0" }
 
 # for HMC5893 mag
 #hmc5983 = {path="../hmc5983", features=["rttdebug"]}
@@ -35,7 +35,7 @@ icm20689 = "0.1.1"
 mpu9250 = "0.20.0"
 
 # FRAM
-spi-memory = { git = "https://github.com/tstellanova/spi-memory" }
+spi-memory = { git = "https://github.com/tstellanova/spi-memory", version="0.2.0"}
 #spi-memory  =  {path= "../spi-memory" }
 
 [dev-dependencies]
