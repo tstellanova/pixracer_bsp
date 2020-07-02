@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["Todd Stellanova <tstellanova@users.noreply.github.com>"]
 edition = "2018"
 description = "A board support package for the Pixracer flight controller hardware"
+license = "BSD-3-Clause"
+repository = "https://github.com/tstellanova/pixracer_bsp"
 
 [dependencies]
 cortex-m = "0.6.2"
@@ -11,8 +13,8 @@ embedded-hal = { version = "0.2.3", features = ["unproven"] }
 
 
 stm32f4 = {version = "0.11", features = ["stm32f427"]  }
-#stm32f4xx-hal = { version ="0.8.0", features = ["stm32f427", "rt"] }
-stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal", features = ["stm32f427", "rt"] }
+stm32f4xx-hal = { version ="0.8.3", features = ["stm32f427", "rt"] }
+#stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal", features = ["stm32f427", "rt"] }
 
 # for ms5611 barometer
 ms5611-spi = { git= "https://github.com/tstellanova/ms5611-ehal" }
