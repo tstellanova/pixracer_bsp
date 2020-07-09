@@ -10,7 +10,9 @@ repository = "https://github.com/tstellanova/pixracer_bsp"
 [dependencies]
 cortex-m = "0.6.2"
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
-
+lazy_static = {version="1.4.0", features= ["spin_no_std"] }
+shared-bus = {version="0.1.4", features=["cortexm"] }
+panic-rtt-core = {version="0.1.1", optional=true}
 
 stm32f4 = {version = "0.11", features = ["stm32f427"]  }
 stm32f4xx-hal = { version ="0.8.3", features = ["stm32f427", "rt"] }
@@ -41,9 +43,9 @@ spi-memory = { git = "https://github.com/tstellanova/spi-memory", version="0.2.0
 [dev-dependencies]
 cortex-m-rt = "0.6.12"
 panic-rtt-core = {version="0.1.1"}
-shared-bus = {version="0.1.4", features=["cortexm"] }
 rand_core = "0.5.1"
 
 [features]
 default = []
+rttdebug = ["panic-rtt-core"]
 
