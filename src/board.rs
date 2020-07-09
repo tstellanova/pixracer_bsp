@@ -32,7 +32,7 @@ pub struct Board<'a> {
     pub mpu: Option<InternalMpu<'a>>,
     pub mag: Option<InternalMagnetometer<'a>>,
     pub six_dof: Option<Internal6Dof<'a>>,
-    pub baro: Option<InternalBarometer<'a>>,
+    pub baro: InternalBarometer<'a>,
 }
 
 
@@ -166,7 +166,7 @@ impl Board<'static> {
             delay_source,
             ext_i2c1: i2c_bus1,
             mpu: mpu_opt,
-            baro: baro_int_opt,
+            baro: baro_int_opt.expect("bogus baro"),
             mag: mag_int_opt,
             six_dof: tdk_6dof_opt
         }
