@@ -22,12 +22,11 @@ readme = "README.md"
 [dependencies]
 cortex-m = "0.6.2"
 embedded-hal = { version = "0.2.4", features = ["unproven"] }
-lazy_static = {version="1.4.0", features= ["spin_no_std"] }
 shared-bus = {version="0.1.4", features=["cortexm"] }
 panic-rtt-core = {version="0.1.1", optional=true}
 
 stm32f4 = {version = "0.11", features = ["stm32f427"]  }
-stm32f4xx-hal = { version ="0.8.3", features = ["stm32f427", "rt"] }
+stm32f4xx-hal = {version ="0.8.3", features = ["stm32f427", "rt"] }
 #stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal", features = ["stm32f427", "rt"] }
 
 # for ms5611 barometer
@@ -49,8 +48,8 @@ icm20689 = "0.1.1"
 mpu9250 = "0.20.0"
 
 # FRAM
-spi-memory = { git = "https://github.com/tstellanova/spi-memory", version="0.2.0"}
 #spi-memory  =  {path= "../spi-memory" }
+spi-memory = { git = "https://github.com/tstellanova/spi-memory", version="0.2.0"}
 
 [dev-dependencies]
 cortex-m-rt = "0.6.12"
