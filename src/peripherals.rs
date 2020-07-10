@@ -12,12 +12,11 @@ use pac::I2C1;
 use embedded_hal::blocking::delay::DelayMs;
 use embedded_hal::digital::v2::{OutputPin, ToggleableOutputPin};
 
-use p_hal::rcc::RccExt;
-use p_hal::time::{U32Ext};
-use p_hal::pwm;
-use p_hal::rng::{RngExt, Rng};
 use p_hal::gpio::{GpioExt, Output, PushPull};
-
+use p_hal::pwm;
+use p_hal::rcc::RccExt;
+use p_hal::rng::{Rng, RngExt};
+use p_hal::time::U32Ext;
 
 /// Initialize peripherals for Pixracer.
 /// Pixracer chip is [STM32F427VIT6 rev.3](http://www.st.com/web/en/catalog/mmc/FM141/SC1169/SS1577/LN1789)
@@ -32,7 +31,7 @@ pub fn setup() -> (
     SpiPins6Dof, // 6dof
     SpiPinsMag,  // mag
     SpiCsBaro,   // baro
-    SpiCsFram, // ferro ram
+    SpiCsFram,   // ferro ram
     Spi1PowerEnable,
     Tim1PwmChannels,
 ) {
@@ -172,7 +171,7 @@ pub fn setup() -> (
         spi_cs_baro,
         spi_cs_fram,
         spi1_power_enable,
-        pwm_tim1_channels
+        pwm_tim1_channels,
     )
 }
 
@@ -202,17 +201,23 @@ pub type Spi2Port = p_hal::spi::Spi<
     ),
 >;
 
-pub type SpiCsImu = p_hal::gpio::gpioc::PC2<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
-pub type SpiDrdyImu =  p_hal::gpio::gpiod::PD15<p_hal::gpio::Input<p_hal::gpio::PullUp>>;
+pub type SpiCsImu =
+    p_hal::gpio::gpioc::PC2<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
+pub type SpiDrdyImu =
+    p_hal::gpio::gpiod::PD15<p_hal::gpio::Input<p_hal::gpio::PullUp>>;
 pub type SpiPinsImu = (SpiCsImu, SpiDrdyImu);
 
-pub type SpiCs6Dof = p_hal::gpio::gpioc::PC15<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
-pub type SpiDrdy6Dof = p_hal::gpio::gpioc::PC14<p_hal::gpio::Input<p_hal::gpio::PullUp>>;
+pub type SpiCs6Dof =
+    p_hal::gpio::gpioc::PC15<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
+pub type SpiDrdy6Dof =
+    p_hal::gpio::gpioc::PC14<p_hal::gpio::Input<p_hal::gpio::PullUp>>;
 pub type SpiPins6Dof = (SpiCs6Dof, SpiDrdy6Dof);
 
-pub type SpiCsMag = p_hal::gpio::gpioe::PE15<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
-pub type SpiDrdyMag =  p_hal::gpio::gpioe::PE12<p_hal::gpio::Input<p_hal::gpio::PullUp>>;
-pub type SpiPinsMag = ( SpiCsMag, SpiDrdyMag);
+pub type SpiCsMag =
+    p_hal::gpio::gpioe::PE15<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
+pub type SpiDrdyMag =
+    p_hal::gpio::gpioe::PE12<p_hal::gpio::Input<p_hal::gpio::PullUp>>;
+pub type SpiPinsMag = (SpiCsMag, SpiDrdyMag);
 
 pub type SpiCsBaro =
     p_hal::gpio::gpiod::PD7<p_hal::gpio::Output<p_hal::gpio::PushPull>>;
@@ -226,7 +231,7 @@ pub type Tim1PwmChannels = (
     p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C1>,
     p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C2>,
     p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C3>,
-    p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C4>
+    p_hal::pwm::PwmChannels<pac::TIM1, p_hal::pwm::C4>,
 );
 
 pub type LedOutputPin = p_hal::gpio::gpiob::PB<Output<PushPull>>;

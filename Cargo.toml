@@ -1,11 +1,23 @@
 [package]
 name = "pixracer_bsp"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Todd Stellanova <tstellanova@users.noreply.github.com>"]
 edition = "2018"
 description = "A board support package for the Pixracer flight controller hardware"
 license = "BSD-3-Clause"
 repository = "https://github.com/tstellanova/pixracer_bsp"
+categories = [
+    "embedded",
+    "hardware-support",
+    "no-std",
+]
+keywords = [
+    "cortex-m",
+    "bsp",
+    "stm32f4xx",
+    "pixracer",
+]
+readme = "README.md"
 
 [dependencies]
 cortex-m = "0.6.2"

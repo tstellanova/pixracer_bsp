@@ -18,11 +18,8 @@ use embedded_hal::digital::v2::ToggleableOutputPin;
 const IMU_REPORTING_RATE_HZ: u16 = 200;
 const IMU_REPORTING_INTERVAL_MS: u16 = 1000 / IMU_REPORTING_RATE_HZ;
 
-
-
-use pixracer_bsp::board::Board;
 use ms5611_spi::Oversampling;
-use cortex_m::asm::bkpt;
+use pixracer_bsp::board::Board;
 
 #[entry]
 fn main() -> ! {
@@ -54,30 +51,35 @@ fn main() -> ! {
 
         for _ in 0..10 {
             for _ in 0..10 {
-                // if board.mpu.is_some() {
-                //     if let Ok(marg_all) = board.mpu.as_mut().unwrap().all::<[f32; 3]>() {
-                //         rprintln!("imu az: {:.02}", marg_all.accel[2]);
-                //     }
-                // }
+                if board.mpu.is_some() {
+                    if let Ok(marg_all) =
+                        board.mpu.as_mut().unwrap().all::<[f32; 3]>()
+                    {
+                        rprintln!("mpu az: {:.02}", marg_all.accel[2]);
+                    }
+                }
 
-                // if board.six_dof.is_some() {
-                //     // if let Ok(gyro_sample) = board.six_dof.as_mut().unwrap().get_gyro() {
-                //     //     rprintln!("gyro: {:?}", gyro_sample);
-                //     // }
-                //     if let Ok(sample) = board.six_dof.as_ref().unwrap().get_scaled_accel() {
-                //     // if let Ok(sample) = board.six_dof.as_mut().unwrap().get_scaled_accel() {
-                //         rprintln!("tdk az: {}", sample[2]);
-                //     }
-                // }
+                if board.six_dof.is_some() {
+                    // if let Ok(gyro_sample) = board.six_dof.as_ref().unwrap().get_gyro() {
+                    //     rprintln!("gyro: {:?}", gyro_sample);
+                    // }
+                    if let Ok(accel_sample) =
+                        board.six_dof.as_mut().unwrap().get_scaled_accel()
+                    {
+                        rprintln!("tdk az: {}", accel_sample[2]);
+                    }
+                }
 
-                //board.delay_source.delay_ms(loop_interval);
+                board.delay_source.delay_ms(loop_interval);
             }
 
-            // if board.mag.is_some() {
-            //     if let Ok(mag_sample) = board.mag.as_mut().unwrap().get_mag_vector() {
-            //         rprintln!("mag_i_0 {}", mag_sample[0]);
-            //     }
-            // }
+            if board.mag.is_some() {
+                if let Ok(mag_sample) =
+                    board.mag.as_mut().unwrap().get_mag_vector()
+                {
+                    rprintln!("mag_i_0 {}", mag_sample[0]);
+                }
+            }
         }
 
         if board.fram.is_some() {
@@ -85,15 +87,17 @@ fn main() -> ! {
                 rprintln!("fram: {:?}", ident);
             }
         }
-        //bkpt();
 
         if board.baro.is_some() {
-            if let Ok(sample) = board.baro.as_mut().unwrap()
-                .get_second_order_sample(Oversampling::OS_2048, &mut board.delay_source) {
+            if let Ok(sample) =
+                board.baro.as_mut().unwrap().get_second_order_sample(
+                    Oversampling::OS_2048,
+                    &mut board.delay_source,
+                )
+            {
                 rprintln!("baro [{}]: {} ", loop_count, sample.pressure);
             }
         }
-        //bkpt();
 
         let _ = board.user_leds[0].toggle();
         let _ = board.user_leds[1].toggle();
@@ -102,4 +106,3 @@ fn main() -> ! {
         loop_count += 1;
     }
 }
-
