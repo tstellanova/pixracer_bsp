@@ -85,7 +85,7 @@ fn main() -> ! {
                 rprintln!("fram: {:?}", ident);
             }
         }
-        bkpt();
+        //bkpt();
 
         if board.baro.is_some() {
             if let Ok(sample) = board.baro.as_mut().unwrap()
@@ -93,7 +93,7 @@ fn main() -> ! {
                 rprintln!("baro [{}]: {} ", loop_count, sample.pressure);
             }
         }
-        bkpt();
+        //bkpt();
 
         let _ = board.user_leds[0].toggle();
         let _ = board.user_leds[1].toggle();

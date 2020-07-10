@@ -5,6 +5,7 @@ use embedded_hal::blocking::delay::DelayMs;
 use core::sync::atomic::{AtomicPtr, Ordering};
 use lazy_static::lazy_static;
 use cortex_m::interrupt::{self, Mutex};
+use cortex_m::singleton;
 use core::ops::DerefMut;
 
 /// Onboard sensors
@@ -21,9 +22,10 @@ use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::PwmPin;
 use core::borrow::BorrowMut;
 use core::cell::RefCell;
+use core::marker::PhantomData;
+use shared_bus::BusMutex;
 
-static mut SPI2_BUS_PTR: Option< Spi2BusManager  > = None;
-
+// static SPI2_PORT:SafeGlobal<Spi2Port> = Mutex::new(RefCell::new(None));
 
 lazy_static! {
     static ref SPI1_BUS_PTR: AtomicPtr<Spi1BusManager> = AtomicPtr::default();
@@ -43,7 +45,7 @@ pub struct Board<'a> {
 }
 
 
-impl Board<'static> {
+impl Board<'_> {
 
     pub fn new() -> Self {
 
@@ -64,15 +66,16 @@ impl Board<'static> {
         ) = peripherals::setup();
 
 
+
         let mut spi1_bus = shared_bus::CortexMBusManager::new(spi1_port);
+        SPI1_BUS_PTR.store(&mut spi1_bus, Ordering::SeqCst);
+
         let mut spi2_bus = shared_bus::CortexMBusManager::new(spi2_port);
         SPI1_BUS_PTR.store(&mut spi1_bus, Ordering::SeqCst);
         //SPI2_BUS_PTR.store(&mut spi2_bus, Ordering::SeqCst);
 
-        unsafe {
-            SPI2_BUS_PTR = Some(spi2_bus);
-        }
-
+        let spi2_bus_mgr: &'static mut Spi2BusManager =
+            singleton!(:Spi2BusManager = spi2_bus).unwrap();
 
 
         let mut i2c_bus1 = shared_bus::CortexMBusManager::new(i2c1_port);
@@ -131,7 +134,8 @@ impl Board<'static> {
 
 
         let  baro_int_opt = {
-            let proxy = unsafe { SPI2_BUS_PTR.unwrap() }.acquire();
+            let proxy = spi2_bus_mgr.acquire();
+            // unsafe { SPI2_BUS_PTR.unwrap() }.acquire();
 
             let rc = Ms5611::new(
                 proxy, spi_cs_baro, &mut delay_source);
@@ -146,7 +150,8 @@ impl Board<'static> {
         };
 
         let fram_opt = {
-            let proxy = unsafe { SPI2_BUS_PTR.unwrap() }.acquire();
+            let proxy = spi2_bus_mgr.acquire();
+            // let proxy = unsafe { SPI2_BUS_PTR.unwrap() }.acquire();
 
             let rc = spi_memory::series25::Flash::init_full(
                 proxy, spi_cs_fram, 2);
@@ -197,3 +202,28 @@ pub type InternalMagnetometer<'a> = HMC5983<hmc5983::interface::SpiInterface<Spi
 pub type Internal6Dof<'a> = ICM20689<icm20689::SpiInterface<Spi1BusProxy<'a>, SpiCs6Dof>>;
 pub type InternalMpu<'a> = Mpu9250<mpu9250::SpiDevice<Spi1BusProxy<'a>, SpiCsImu>, mpu9250::Imu >;
 pub type InternalFram<'a> = spi_memory::series25::Flash<Spi2BusProxy<'a>,SpiCsFram>;
+
+
+// pub struct ThinMutex<T> {
+//     _marker: PhantomData<T>
+// }
+//
+// pub type SafeGlobal<T> = Mutex<RefCell<Option<T>>>;
+//
+// impl<T> shared_bus::BusMutex<T> for ThinMutex<T> {
+//     fn create(v: T) -> ThinMutex<T> {
+//         Self {
+//             _marker: PhantomData
+//         }
+//     }
+//
+//     fn lock<R, F: FnOnce(&T) -> R>(&self, f: F) -> R {
+//         interrupt::free(|cs| {
+//             if let Some(ref mut inner) = USER_LED_1.borrow(cs).borrow_mut().deref_mut() {
+//                 f(inner);
+//             }
+//         })
+//
+//     }
+// }
+//
