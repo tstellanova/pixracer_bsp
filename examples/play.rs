@@ -22,6 +22,7 @@ const IMU_REPORTING_INTERVAL_MS: u16 = 1000 / IMU_REPORTING_RATE_HZ;
 
 use pixracer_bsp::board::Board;
 use ms5611_spi::Oversampling;
+use cortex_m::asm::bkpt;
 
 #[entry]
 fn main() -> ! {
@@ -40,6 +41,7 @@ fn main() -> ! {
     // let min_duty = 21000;
     // let duty_increment = 1000;
     // let mut pwm0_duty = min_duty;
+    let mut loop_count: u32 = 0;
     loop {
         //TODO pwm sweep
         // // minimum duty = 20,000 ?
@@ -78,15 +80,26 @@ fn main() -> ! {
             // }
         }
 
-        // if board.baro.is_some() {
-            if let Ok(sample) = board.baro
-                .get_second_order_sample(Oversampling::OS_2048, &mut board.delay_source) {
-                // rprintln!("baro: {} ", sample.pressure);
+        if board.fram.is_some() {
+            if let Ok(ident) = board.fram.as_mut().unwrap().read_jedec_id() {
+                rprintln!("fram: {:?}", ident);
             }
-        // }
+        }
+        bkpt();
+
+        if board.baro.is_some() {
+            if let Ok(sample) = board.baro.as_mut().unwrap()
+                .get_second_order_sample(Oversampling::OS_2048, &mut board.delay_source) {
+                rprintln!("baro [{}]: {} ", loop_count, sample.pressure);
+            }
+        }
+        bkpt();
 
         let _ = board.user_leds[0].toggle();
         let _ = board.user_leds[1].toggle();
+        board.delay_source.delay_ms(loop_interval);
+
+        loop_count += 1;
     }
 }
 

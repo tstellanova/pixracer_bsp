@@ -9,7 +9,7 @@ repository = "https://github.com/tstellanova/pixracer_bsp"
 
 [dependencies]
 cortex-m = "0.6.2"
-embedded-hal = { version = "0.2.3", features = ["unproven"] }
+embedded-hal = { version = "0.2.4", features = ["unproven"] }
 lazy_static = {version="1.4.0", features= ["spin_no_std"] }
 shared-bus = {version="0.1.4", features=["cortexm"] }
 panic-rtt-core = {version="0.1.1", optional=true}
