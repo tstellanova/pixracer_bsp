@@ -75,12 +75,12 @@ pub fn setup() -> (
 
     let spi1_port = {
         let sck = gpioa.pa5.into_alternate_af5();
-        let miso = gpioa.pa6.into_alternate_af5();
-        let mosi = gpioa.pa7.into_alternate_af5();
+        let cipo = gpioa.pa6.into_alternate_af5();
+        let copi = gpioa.pa7.into_alternate_af5();
 
         p_hal::spi::Spi::spi1(
             dp.SPI1,
-            (sck, miso, mosi),
+            (sck, cipo, copi),
             embedded_hal::spi::MODE_3,
             8_000_000.hz(),
             clocks,
@@ -89,12 +89,12 @@ pub fn setup() -> (
 
     let spi2_port = {
         let sck = gpiob.pb10.into_alternate_af5();
-        let miso = gpiob.pb14.into_alternate_af5();
-        let mosi = gpiob.pb15.into_alternate_af5();
+        let cipo = gpiob.pb14.into_alternate_af5();
+        let copi = gpiob.pb15.into_alternate_af5();
 
         p_hal::spi::Spi::spi2(
             dp.SPI2,
-            (sck, miso, mosi),
+            (sck, cipo, copi),
             embedded_hal::spi::MODE_3,
             20_000_000.hz(),
             clocks,
@@ -187,8 +187,8 @@ pub type Spi1Port = p_hal::spi::Spi<
     pac::SPI1,
     (
         p_hal::gpio::gpioa::PA5<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //SCLK
-        p_hal::gpio::gpioa::PA6<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //MISO
-        p_hal::gpio::gpioa::PA7<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //MOSI
+        p_hal::gpio::gpioa::PA6<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //CIPO
+        p_hal::gpio::gpioa::PA7<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //COPI
     ),
 >;
 
@@ -196,8 +196,8 @@ pub type Spi2Port = p_hal::spi::Spi<
     pac::SPI2,
     (
         p_hal::gpio::gpiob::PB10<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //SCLK
-        p_hal::gpio::gpiob::PB14<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //MISO
-        p_hal::gpio::gpiob::PB15<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //MOSI
+        p_hal::gpio::gpiob::PB14<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //CIPO
+        p_hal::gpio::gpiob::PB15<p_hal::gpio::Alternate<p_hal::gpio::AF5>>, //COPI
     ),
 >;
 

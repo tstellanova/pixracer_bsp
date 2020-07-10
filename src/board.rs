@@ -10,8 +10,7 @@ use hmc5983::HMC5983;
 use icm20689::{Builder, ICM20689};
 /// Onboard sensors
 use mpu9250::Mpu9250;
-use ms5611::{Ms5611, Oversampling};
-use ms5611_spi as ms5611;
+use ms5611_spi::Ms5611;
 
 use crate::peripherals;
 use core::borrow::BorrowMut;
@@ -128,8 +127,6 @@ impl Board<'_> {
 
         let baro_int_opt = {
             let proxy = spi2_bus_mgr.acquire();
-            // unsafe { SPI2_BUS_PTR.unwrap() }.acquire();
-
             let rc = Ms5611::new(proxy, spi_cs_baro, &mut delay_source);
             if let Ok(mut baro) = rc {
                 Some(baro)
@@ -142,10 +139,8 @@ impl Board<'_> {
 
         let fram_opt = {
             let proxy = spi2_bus_mgr.acquire();
-            // let proxy = unsafe { SPI2_BUS_PTR.unwrap() }.acquire();
-
-            let rc =
-                spi_memory::series25::Flash::init_full(proxy, spi_cs_fram, 2);
+            let rc = spi_memory::series25::Flash::init(proxy, spi_cs_fram);
+            //spi_memory::series25::Flash::init_full(proxy, spi_cs_fram, 2);
             if let Ok(fram) = rc {
                 Some(fram)
             } else {
@@ -189,7 +184,6 @@ pub type BusProxy<'a, Port> = shared_bus::proxy::BusProxy<
 >;
 
 pub type InternalBarometer<'a> = Ms5611<Spi2BusProxy<'a>, SpiCsBaro>;
-// pub type InternalBarometer<'a> = Ms5611<Spi2Port, SpiCsBaro>;
 pub type InternalMagnetometer<'a> =
     HMC5983<hmc5983::interface::SpiInterface<Spi1BusProxy<'a>, SpiCsMag>>;
 pub type Internal6Dof<'a> =
